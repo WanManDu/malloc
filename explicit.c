@@ -76,7 +76,6 @@ void *coalesce(void *bp);
          
 int mm_init(void)
 { 
-    printf("init\n");
     if ((heap_listp = mem_sbrk(6 * WSIZE)) == (void *)-1){
         return -1;
     }
@@ -98,7 +97,6 @@ int mm_init(void)
 }
 
 void *extend_heap(size_t words){
-    printf("extend\n");
     char *bp;
     size_t size;
 
@@ -119,7 +117,6 @@ void *extend_heap(size_t words){
 }
 
 void *find_fit(size_t asize){      
-    printf("find\n");
     void *bp;
 
     for (bp = linked_listp; GET_ALLOC(HDRP(bp)) != 1; bp = NEXT_LINK(bp)){
@@ -131,16 +128,15 @@ void *find_fit(size_t asize){
 }
 
 void place(void *bp, size_t asize) {
-    printf("place\n");
     size_t csize = GET_SIZE(HDRP(bp));
 
     delete_linked(bp);
 
-    if ((csize - asize) >= (3 * DSIZE)) {
-        PUT(HDRP(bp), PACK(asize, 1));
+    if ((csize - asize) >= (3 * DSIZE)) {   //할당할 블록의 크기와 가용 블록의 크기가 3 * DSIZE 보다 클 때
+        PUT(HDRP(bp), PACK(asize, 1));      //할당된 블록의 헤더와 풋터에 블록 크기와 할당 정보를 넣고
         PUT(FTRP(bp), PACK(asize, 1));
         bp = NEXT_BLKP(bp);
-        PUT(HDRP(bp), PACK(csize-asize, 0));
+        PUT(HDRP(bp), PACK(csize-asize, 0));//남은 블록을 가용 블록으로 만들어 준 뒤 가용 블럭 연결 리스트에 추가시킨다.
         PUT(FTRP(bp), PACK(csize-asize, 0));
         insert_linked(bp);
     } else {
@@ -150,7 +146,6 @@ void place(void *bp, size_t asize) {
 }
 
 void insert_linked(void *bp) {
-    printf("insert\n");
     PREV_LINK(bp) = NULL;
     NEXT_LINK(bp) = linked_listp;
     PREV_LINK(linked_listp) = bp;
@@ -159,7 +154,6 @@ void insert_linked(void *bp) {
 }
 
 void delete_linked(void *bp) {
-    printf("delete\n");
 
     if (bp == linked_listp) {    // bp가 가용 연결 리스트의 첫 가용 블럭일 때  
         PREV_LINK(NEXT_LINK(bp)) = NULL;
@@ -171,7 +165,6 @@ void delete_linked(void *bp) {
 }
 
 void *mm_malloc(size_t size) {
-    printf("malloc\n");
     char *bp;
     size_t asize;
     size_t extendsize;
@@ -200,7 +193,6 @@ void *mm_malloc(size_t size) {
 }
 
 void mm_free(void *bp) {
-    printf("free\n");
     size_t size = GET_SIZE(HDRP(bp));
 
     PUT(HDRP(bp), PACK(size, 0));
@@ -210,7 +202,6 @@ void mm_free(void *bp) {
 }
 
 void *coalesce(void *bp) {
-    printf("coalesce\n");
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
@@ -220,10 +211,10 @@ void *coalesce(void *bp) {
     } else if (prev_alloc && !next_alloc) {
         delete_linked(NEXT_BLKP(bp));   //다음 블록을 가용 연결 리스트에서 제거
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
-        PUT(HDRP(bp), PACK(size, 0));
+        PUT(HDRP(bp), PACK(size, 0));   //헤더의 위치를 먼저 저장 해주어야 풋터의 위치를 알 수 있음
         PUT(FTRP(bp), PACK(size, 0));
         insert_linked(bp);
-    } else if (!prev_alloc && next_alloc) { //delete의 위치를 고려해줘야함
+    } else if (!prev_alloc && next_alloc) { 
         delete_linked(PREV_BLKP(bp));   //이전 블록을 가용 연결 리스트에서 제거
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         bp = PREV_BLKP(bp);
@@ -231,8 +222,8 @@ void *coalesce(void *bp) {
         PUT(FTRP(bp), PACK(size, 0));
         insert_linked(bp);
     } else {
-        delete_linked(PREV_BLKP(bp));   //다음 블록을 가용 연결 리스트에서 제거
-        delete_linked(NEXT_BLKP(bp));   //이전 블록을 가용 연결 리스트에서 제거
+        delete_linked(PREV_BLKP(bp));   //이전 블록을 가용 연결 리스트에서 제거
+        delete_linked(NEXT_BLKP(bp));   //다음 블록을 가용 연결 리스트에서 제거
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp)));
         bp = PREV_BLKP(bp);
         PUT(HDRP(bp), PACK(size, 0));
@@ -244,7 +235,6 @@ void *coalesce(void *bp) {
 }
 
 void *mm_realloc(void *ptr, size_t size) {
-    printf("realloc\n");
     void *oldptr = ptr;
     void *newptr;
     size_t copySize;
